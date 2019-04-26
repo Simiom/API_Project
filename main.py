@@ -1,9 +1,8 @@
 from flask import Flask, request
 import logging
 import json
-import datetime
 
-from geo import get_weather, get_city, get_day_weather, get_time, get_weather_at_time, get_kol_day
+from geo import get_weather, get_city, get_day_weather, get_time, get_weather_at_time
 
 app = Flask(__name__)
 
@@ -120,24 +119,7 @@ def handle_dialog(req, res):
                         res['response']['card']['title'] = '''В {} в {}: {}°'''.format(cit.title(), time, temp)
                         res['response']['end_session'] = True
                         return
-                    elif req['request']['original_utterance'].lower().split()[-2] == "до":
-                        kol = get_kol_day(cit, time)
 
-                        res['response']['text'] = "период"
-                        res['response']['card'] = {}
-                        res['response']['card']['type'] = 'ItemsList'
-                        res['response']['card']['header'] = {}
-                        res['response']['card']['header']["text"] = "Погода до {}".format(time)
-                        res['response']['card']['items'] = [{}] * kol
-                        for i in range(kol):
-                            vid, chis, mon, day, ivn = get_day_weather(cit, i)
-                            res['response']['card']['items'][i][
-                                'image_id'] = vidipogod[vid][1]
-                            res['response']['card']["items"][i]["title"] = "Погода на {} число".format(chis)
-                            res['response']['card']["items"][i]["description"] = "Утром: {}° | Днём: {}° | Вечером: {}°".format(mon, day,
-                                                                                                            ivn)
-                        res['response']['end_session'] = True
-                        return
                     else:
                         res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                         return
@@ -155,29 +137,63 @@ def handle_dialog(req, res):
                 else:
                     res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                     return
-            elif len(req['request']['original_utterance'].lower().split()) == 6 and \
-                    req['request']['original_utterance'].lower().split()[-1] == "число":
-                time = get_time(req)
+            elif len(req['request']['original_utterance'].lower().split()) == 6:
+                if req['request']['original_utterance'].lower().split()[-1] == "число":
+                    time = get_time(req)
 
-                if time is not None:
-                    kol = get_kol_day(cit, time)
-                    vid, chis, mon, day, ivn = get_day_weather(cit, kol-1)
-                    res['response']['text'] = "Погода на число"
-                    res['response']['card'] = {}
-                    res['response']['card']['type'] = 'BigImage'
-                    res['response']['card']['image_id'] = vidipogod[vid][1]
-                    res['response']['card']['title'] = '''Погода в {} на {} число'''.format(cit.title(), chis)
-                    res['response']['card']['description'] = "Утром: {}° | Днём: {}° | Вечером: {}°".format(mon, day,
-                                                                                                            ivn)
+                    if time is not None:
+
+                        vid, chis, mon, day, ivn = get_day_weather(cit, time)
+                        res['response']['text'] = "Погода на число"
+                        res['response']['card'] = {}
+                        res['response']['card']['type'] = 'BigImage'
+                        res['response']['card']['image_id'] = vidipogod[vid][1]
+                        res['response']['card']['title'] = '''Погода в {} на {} число'''.format(cit.title(),
+                                                                                                str(int(chis)))
+                        res['response']['card']['description'] = "Утром: {}° | Днём: {}° | Ночь: {}°".format(mon,
+                                                                                                             day,
+                                                                                                             ivn)
+                        res['response']['end_session'] = True
+                        return
+                    else:
+                        res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
+                        return
+                elif req['request']['original_utterance'].lower().split()[-1] in ["дней", "день", "дня"]:
+                    try:
+                        kol = int(req['request']['original_utterance'].lower().split()[-2])
+                    except Exception:
+                        res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
+                        return
+                    if kol <= 5 and kol >= 1:
+                        pogoda = get_weather(cit, True)
+                        res['response']['text'] = "период"
+                        res['response']['card'] = {}
+                        res['response']['card']['type'] = 'ItemsList'
+                        res['response']['card']['header'] = {}
+                        res['response']['card']['header']["text"] = "Погода на {} {}".format(str(kol), req['request'][
+                            'original_utterance'].lower().split()[-1])
+                        m=[]
+                        for i in range(kol):
+                            m.append({})
+                        res['response']['card']['items'] = m
+
+                    for i in range(kol):
+                        vid, chis, mon, day, ivn = pogoda[i]['parts']['day']["condition"], \
+                                                   pogoda[i]['date'][8:], \
+                                                   pogoda[i]['parts']['morning']["temp_max"], \
+                                                   pogoda[i]['parts']['day']["temp_max"], \
+                                                   pogoda[i]['parts']['night_short']["temp"]
+
+                        res['response']['card']['items'][i]['image_id'] = vidipogod[vid][1]
+                        res['response']['card']["items"][i]["title"] = "Погода на {} число".format(chis)
+                        res['response']['card']["items"][i][
+                            "description"] = "Утром: {}° | Днём: {}° | Ночь: {}°".format(mon, day,
+                                                                                         ivn)
                     res['response']['end_session'] = True
                     return
                 else:
                     res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                     return
-
-
-
-
 
 
 # Функция возвращает две подсказки для ответа.
