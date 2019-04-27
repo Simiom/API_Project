@@ -23,9 +23,6 @@ def get_time(req):
             return entity.get('value', None)
 
 
-
-
-
 def get_weather_at_time(city_name, time, will=False):
     geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
 
@@ -46,10 +43,16 @@ def get_weather_at_time(city_name, time, will=False):
     all_info = json.loads(request.text)
     if will is False:
         return all_info['forecasts'][0]["hours"][time]["temp"], \
-               all_info['forecasts'][0]["hours"][time]["condition"]
+               all_info['forecasts'][0]["hours"][time]["condition"],\
+               all_info['forecasts'][0]['hours'][time]['feels_like'],\
+               all_info['forecasts'][0]['hours'][time]["wind_speed"], \
+               all_info['forecasts'][0]['hours'][time]["wind_dir"]
     else:
         return all_info['forecasts'][1]["hours"][13]["temp"], \
-               all_info['forecasts'][1]["hours"][13]["condition"]
+               all_info['forecasts'][1]["hours"][13]["condition"],\
+               all_info['forecasts'][1]['hours'][13]['feels_like'],\
+               all_info['forecasts'][1]['hours'][13]["wind_speed"], \
+               all_info['forecasts'][1]['hours'][13]["wind_dir"]
 
 
 def get_weather(city_name, mass=False):
@@ -109,6 +112,7 @@ def get_day_weather(city_name, day=0):
         now = all_info['forecasts'][0]["date"]
         now = [now[:4], now[5:7], now[8:]]
         posl = now.copy()
+
         if int(now[2]) > day:
             posl[2], posl[1] = str(day), posl[1][0] + str(int(posl[1][1]) + 1)
         elif int(now[2]) < day:
@@ -123,7 +127,11 @@ def get_day_weather(city_name, day=0):
         bb = datetime.date(int(posl[0]), int(posl[1]), int(posl[2]))
         cc = aa - bb
         den = abs(int(str(cc).split()[0]))
-        return all_info['forecasts'][den]['parts']['day']["condition"], all_info['forecasts'][den]['date'][8:], \
-               all_info['forecasts'][den]['parts']['morning']["temp_max"], \
-               all_info['forecasts'][den]['parts']['day']["temp_max"], \
-               all_info['forecasts'][den]['parts']['night_short']["temp"]
+        if den > 7:
+            return None, None, None, None, None
+        else:
+
+            return all_info['forecasts'][den]['parts']['day']["condition"], all_info['forecasts'][den]['date'][8:], \
+                   all_info['forecasts'][den]['parts']['morning']["temp_max"], \
+                   all_info['forecasts'][den]['parts']['day']["temp_max"], \
+                   all_info['forecasts'][den]['parts']['night_short']["temp"]
