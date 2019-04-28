@@ -5,20 +5,15 @@ import datetime
 
 
 def get_city(req):
-    # перебираем сущности
-
     for entity in req['request']['nlu']['entities']:
-        # находим сущность с типом 'YANDEX.FIO'
+
         if entity['type'] == 'YANDEX.GEO':
-            # Если есть сущность с ключом 'first_name',
-            # то возвращаем её значение.
-            # Во всех остальных случаях возвращаем None.
             return entity['value'].get('city', None)
 
 
 def get_time(req):
     for entity in req['request']['nlu']['entities']:
-        # находим сущность с типом 'YANDEX.FIO'
+
         if entity['type'] == 'YANDEX.NUMBER':
             return entity.get('value', None)
 
@@ -43,14 +38,14 @@ def get_weather_at_time(city_name, time, will=False):
     all_info = json.loads(request.text)
     if will is False:
         return all_info['forecasts'][0]["hours"][time]["temp"], \
-               all_info['forecasts'][0]["hours"][time]["condition"],\
-               all_info['forecasts'][0]['hours'][time]['feels_like'],\
+               all_info['forecasts'][0]["hours"][time]["condition"], \
+               all_info['forecasts'][0]['hours'][time]['feels_like'], \
                all_info['forecasts'][0]['hours'][time]["wind_speed"], \
                all_info['forecasts'][0]['hours'][time]["wind_dir"]
     else:
         return all_info['forecasts'][1]["hours"][13]["temp"], \
-               all_info['forecasts'][1]["hours"][13]["condition"],\
-               all_info['forecasts'][1]['hours'][13]['feels_like'],\
+               all_info['forecasts'][1]["hours"][13]["condition"], \
+               all_info['forecasts'][1]['hours'][13]['feels_like'], \
                all_info['forecasts'][1]['hours'][13]["wind_speed"], \
                all_info['forecasts'][1]['hours'][13]["wind_dir"]
 

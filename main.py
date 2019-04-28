@@ -56,30 +56,18 @@ def handle_dialog(req, res):
     user_id = req['session']['user_id']
 
     if req['session']['new']:
-        # Это новый пользователь.
-        # Инициализируем сессию и поприветствуем его.
-        # Запишем подсказки, которые мы ему покажем в первый раз
-
         sessionStorage[user_id] = {
             'suggests': [
                 "Да",
                 "Нет"
             ]
         }
-        # Заполняем текст ответа
+
         res['response']['text'] = 'Привет! Хочешь узнать погоду?'
-        # Получим подсказки
+
         res['response']['buttons'] = get_suggests(user_id)
         return
 
-    # Сюда дойдем только, если пользователь не новый,
-    # и разговор с Алисой уже был начат
-    # Обрабатываем ответ пользователя.
-    # В req['request']['original_utterance'] лежит весь текст,
-    # что нам прислал пользователь
-    # Если он написал 'ладно', 'куплю', 'покупаю', 'хорошо',
-    # то мы считаем, что пользователь согласился.
-    # Подумайте, всё ли в этом фрагменте написано "красиво"?
     if req['request']['original_utterance'].lower() in ["да", "конечно", "ладно", "давай", "погода"] and ask[
         "weather"] is False:
         res['response']['text'] = 'Я вас слушаю.'
@@ -98,7 +86,7 @@ def handle_dialog(req, res):
             res['response']['text'] = "Не расслышала(. Повтори пожалуйста."
             return
         else:
-            if len(req['request']['original_utterance'].lower().split()) == 3:  # Запрос: Погода в <Город>
+            if len(req['request']['original_utterance'].lower().split()) == 3:  # Запрос: Погода в [Город]
                 temp, vid, mon, day, ivn = get_day_weather(cit)
                 res['response']['text'] = "Погода сейчас"
                 res['response']['card'] = {}
@@ -112,6 +100,7 @@ def handle_dialog(req, res):
             elif len(req['request']['original_utterance'].lower().split()) == 5:
                 time = get_time(req)
                 if time is not None:
+                    # Запрос: Погода в [Город] в [час]
                     if req['request']['original_utterance'].lower().split()[-2] == "в" and time <= 23 and time >= 1:
                         temp, vid, feel, wind_s, wind_d = get_weather_at_time(cit, time)
                         res['response']['text'] = "Погода на время"
@@ -130,7 +119,8 @@ def handle_dialog(req, res):
                         res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                         return
 
-                elif req['request']['original_utterance'].lower().split()[-1] == "завтра":
+                elif req['request']['original_utterance'].lower().split()[
+                    -1] == "завтра":  # Запрос: Погода в [Город] на завтра
                     temp, vid, feel, wind_s, wind_d = get_weather_at_time(cit, time, True)
                     res['response']['text'] = "Погода на время"
                     res['response']['card'] = {}
@@ -146,7 +136,8 @@ def handle_dialog(req, res):
                     res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                     return
             elif len(req['request']['original_utterance'].lower().split()) == 6:
-                if req['request']['original_utterance'].lower().split()[-1] == "число":
+                if req['request']['original_utterance'].lower().split()[
+                    -1] == "число":  # Запрос: Погода в [Город] на [число] число
                     time = get_time(req)
 
                     if time is not None and time <= 31 and time >= 1:
@@ -170,6 +161,7 @@ def handle_dialog(req, res):
                     else:
                         res['response']['text'] = "Возможно запрос не верен. Пересмотрите его."
                         return
+                # Запрос: Погода в [Город] на [цифра] дней
                 elif req['request']['original_utterance'].lower().split()[-1] in ["дней", "день", "дня"]:
                     try:
                         kol = int(req['request']['original_utterance'].lower().split()[-2])
@@ -216,11 +208,9 @@ def handle_dialog(req, res):
         return
 
 
-# Функция возвращает две подсказки для ответа.
 def get_suggests(user_id):
     session = sessionStorage[user_id]
 
-    # Выбираем две первые подсказки из массива.
     suggests = [
         {'title': suggest, 'hide': True}
         for suggest in session['suggests'][:2]
